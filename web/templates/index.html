@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 14px 40px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #result {
+            min-height: 100px;
+        }
+
+        .error {
+            color: #e74c3c;
+            padding: 15px;
+            background: #fadbd8;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .success {
+            color: #27ae60;
+            padding: 15px;
+            background: #d5f4e6;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .order-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+            text-align: right;
+        }
+
+        .items-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .items-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .items-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .items-table tr:hover {
+            background: #f0f0f0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .badge-info {
+            background: #d6eaf8;
+            color: #2980b9;
+        }
+
+        .total-section {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .total-section h3 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .total-amount {
+            font-size: 2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛍️ Order Service</h1>
+        <p class="subtitle">Поиск информации о заказах в реальном времени</p>
+
+        <div class="search-box">
+            <input type="text" id="orderInput" placeholder="Введите Order UID..." autofocus>
+            <button onclick="searchOrder()">Найти заказ</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatCurrency(amount, currency = 'RUB') {
+            return new Intl.NumberFormat('ru-RU', { 
+                style: 'currency', 
+                currency: currency 
+            }).format(amount);
+        }
+
+        function renderOrderDetails(data) {
+    return `
+        <div class="success"> Заказ найден в кэше</div>
+        
+        <div class="order-details">
+            <!-- Основная информация -->
+            <div class="card">
+                <h3>📦 Основная информация</h3>
+                <div class="info-row">
+                    <span class="info-label">ID заказа:</span>
+                    <span class="info-value"><strong>${data.order_uid}</strong></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Трек-номер:</span>
+                    <span class="info-value">${data.track_number}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Точка входа:</span>
+                    <span class="info-value"><span class="badge badge-info">${data.entry}</span></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Служба доставки:</span>
+                    <span class="info-value">${data.delivery_service}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Дата создания:</span>
+                    <span class="info-value">${formatDate(data.date_created)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Язык:</span>
+                    <span class="info-value">${data.locale}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ID клиента:</span>
+                    <span class="info-value">${data.customer_id}</span>
+                </div>
+            </div>
+
+            <!-- Информация о доставке -->
+            <div class="card">
+                <h3>🚚 Доставка</h3>
+                <div class="info-row">
+                    <span class="info-label">Получатель:</span>
+                    <span class="info-value"><strong>${data.delivery.name}</strong></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Телефон:</span>
+                    <span class="info-value">${data.delivery.phone}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Электронная почта:</span>
+                    <span class="info-value">${data.delivery.email}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Город:</span>
+                    <span class="info-value">${data.delivery.city}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Регион:</span>
+                    <span class="info-value">${data.delivery.region}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Адрес:</span>
+                    <span class="info-value">${data.delivery.address}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Почтовый индекс:</span>
+                    <span class="info-value">${data.delivery.zip}</span>
+                </div>
+            </div>
+
+            <!-- Информация об оплате -->
+            <div class="card">
+                <h3>💳 Оплата</h3>
+                <div class="info-row">
+                    <span class="info-label">ID транзакции:</span>
+                    <span class="info-value">${data.payment.transaction}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Платёжный провайдер:</span>
+                    <span class="info-value"><span class="badge badge-success">${data.payment.provider}</span></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Банк:</span>
+                    <span class="info-value">${data.payment.bank}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Валюта:</span>
+                    <span class="info-value">${data.payment.currency}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Стоимость товаров:</span>
+                    <span class="info-value">${formatCurrency(data.payment.goods_total / 100, data.payment.currency)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Стоимость доставки:</span>
+                    <span class="info-value">${formatCurrency(data.payment.delivery_cost / 100, data.payment.currency)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Таможенный сбор:</span>
+                    <span class="info-value">${formatCurrency(data.payment.custom_fee / 100, data.payment.currency)}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица товаров -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Бренд</th>
+                    <th>Размер</th>
+                    <th>Цена</th>
+                    <th>Скидка</th>
+                    <th>Итого</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.items.map(item => `
+                    <tr>
+                        <td><strong>${item.name}</strong><br><small>Трек: ${item.track_number}</small></td>
+                        <td>${item.brand}</td>
+                        <td>${item.size}</td>
+                        <td>${formatCurrency(item.price / 100, data.payment.currency)}</td>
+                        <td>${item.sale}%</td>
+                        <td><strong>${formatCurrency(item.total_price / 100, data.payment.currency)}</strong></td>
+                        <td><span class="badge ${item.status === 200 ? 'badge-success' : 'badge-info'}">${item.status}</span></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <!-- Итоговая сумма -->
+        <div class="total-section">
+            <h3>Общая сумма заказа</h3>
+            <div class="total-amount">${formatCurrency(data.payment.amount / 100, data.payment.currency)}</div>
+        </div>
+    `;
+}
+
+
+        function searchOrder() {
+            const orderUID = document.getElementById('orderInput').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!orderUID) {
+                resultDiv.innerHTML = '<div class="error">❌ Пожалуйста, введите Order UID</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Загрузка...</div>';
+
+            fetch(`/api/order/${orderUID}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Заказ не найден');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    resultDiv.innerHTML = renderOrderDetails(data);
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<div class="error"> ${error.message}</div>`;
+                });
+        }
+
+        document.getElementById('orderInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchOrder();
+            }
+        });
+    </script>
+</body>
+</html>
